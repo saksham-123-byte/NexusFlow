@@ -11,5 +11,4 @@ const telemetryRouter = require("./routes/telemetry.routes");
 app.use("/api/telemetry", telemetryRouter);
 
 
-
 module.exports = app;
