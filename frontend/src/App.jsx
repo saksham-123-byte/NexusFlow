@@ -1,6 +1,5 @@
 
-import { useCallback, useRef } from 'react';
-
+import { useCallback, useRef, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -17,128 +16,41 @@ import {
 import '@xyflow/react/dist/style.css';
 import './App.css';
 
-// ==========================================
-// 1. SENSOR NODE
-// ==========================================
-
-function SensorNode({ data }) {
-  return (
-    <div className="custom-node sensor-node">
-      <Handle type="source" position={Position.Bottom} />
-
-      <div className="node-heading">
-        <span className="node-icon">◉</span>
-        <span>SENSOR</span>
-      </div>
-
-      <h3>{data.label}</h3>
-      <p>{data.description}</p>
-
-      <div className="node-footer">
-        IoT Data Source
-      </div>
-    </div>
-  );
-}
-
-// ==========================================
-// 2. CONDITION NODE
-// ==========================================
-
-function ConditionNode({ data }) {
-  return (
-    <div className="custom-node condition-node">
-      <Handle type="target" position={Position.Top} />
-      <Handle type="source" position={Position.Bottom} />
-
-      <div className="node-heading">
-        <span className="node-icon">◇</span>
-        <span>CONDITION</span>
-      </div>
-
-      <h3>{data.label}</h3>
-      <p>{data.description}</p>
-
-      <div className="node-footer">
-        Logic Evaluation
-      </div>
-    </div>
-  );
-}
-
-// ==========================================
-// 3. ALERT NODE
-// ==========================================
-
-function AlertNode({ data }) {
-  return (
-    <div className="custom-node alert-node">
-      <Handle type="target" position={Position.Top} />
-
-      <div className="node-heading">
-        <span className="node-icon">⚡</span>
-        <span>ACTION</span>
-      </div>
-
-      <h3>{data.label}</h3>
-      <p>{data.description}</p>
-
-      <div className="node-footer">
-        Notification Service
-      </div>
-    </div>
-  );
-}
-
-// ==========================================
-// 4. REGISTER CUSTOM NODE TYPES
-// ==========================================
-
-const nodeTypes = {
-  sensor: SensorNode,
-  condition: ConditionNode,
-  alert: AlertNode,
-};
-
-// ==========================================
-// 5. INITIAL NODES
-// ==========================================
-
+// Initial workflow nodes
 const initialNodes = [
   {
     id: '1',
     type: 'sensor',
-    position: { x: 100, y: 80 },
+    position: { x: 100, y: 130 },
     data: {
       label: 'Temperature Sensor',
-      description: 'Collect machine temperature',
+      sensor: 'Temperature',
+      unit: '°C',
     },
   },
-
   {
     id: '2',
     type: 'condition',
-    position: { x: 100, y: 260 },
+    position: { x: 400, y: 130 },
     data: {
-      label: 'Temperature > 80°C',
-      description: 'Check temperature threshold',
+      label: 'Temperature Condition',
+      sensor: 'Temperature',
+      operator: 'greater_than',
+      threshold: 80,
+      unit: '°C',
     },
   },
-
   {
     id: '3',
     type: 'alert',
-    position: { x: 100, y: 440 },
+    position: { x: 700, y: 130 },
     data: {
       label: 'Send Alert',
-      description: 'Notify machine operator',
+      action: 'Send Alert',
+      message: 'Temperature limit exceeded!',
     },
   },
 ];
-
-// ==========================================
-// 6. INITIAL CONNECTIONS
-// ==========================================
 
 const initialEdges = [
   {
@@ -146,416 +58,455 @@ const initialEdges = [
     source: '1',
     target: '2',
     animated: true,
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-    },
+    markerEnd: { type: MarkerType.ArrowClosed },
   },
-
   {
     id: 'e2-3',
     source: '2',
     target: '3',
     animated: true,
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
+    markerEnd: { type: MarkerType.ArrowClosed },
+  },
+];
+
+// Custom Sensor Node
+function SensorNode({ data }) {
+  return (
+    <div className="node-card sensor-node">
+      <Handle type="source" position={Position.Bottom} />
+      <div className="node-icon">🌡️</div>
+      <div className="node-content">
+        <strong>{data.label}</strong>
+        <span>Sensor Input</span>
+        <small>{data.sensor} ({data.unit})</small>
+      </div>
+    </div>
+  );
+}
+
+// Custom Condition Node
+function ConditionNode({ data }) {
+  const operators = {
+    greater_than: '>',
+    less_than: '<',
+    equal_to: '=',
+    greater_equal: '≥',
+    less_equal: '≤',
+  };
+
+  return (
+    <div className="node-card condition-node">
+      <Handle type="target" position={Position.Top} />
+      <div className="node-icon">⚙️</div>
+      <div className="node-content">
+        <strong>{data.label}</strong>
+        <span>Condition</span>
+        <small>
+          {data.sensor} {operators[data.operator] || '>'} {data.threshold}
+          {data.unit}
+        </small>
+      </div>
+      <Handle type="source" position={Position.Bottom} />
+    </div>
+  );
+}
+
+// Custom Alert Node
+function AlertNode({ data }) {
+  return (
+    <div className="node-card alert-node">
+      <Handle type="target" position={Position.Top} />
+      <div className="node-icon">🔔</div>
+      <div className="node-content">
+        <strong>{data.label}</strong>
+        <span>Action</span>
+        <small>{data.action}</small>
+      </div>
+    </div>
+  );
+}
+
+const nodeTypes = {
+  sensor: SensorNode,
+  condition: ConditionNode,
+  alert: AlertNode,
+};
+
+const nodeTemplates = [
+  {
+    type: 'sensor',
+    label: 'Temperature Sensor',
+    category: 'SENSOR',
+    icon: '🌡️',
+    data: { label: 'Temperature Sensor', sensor: 'Temperature', unit: '°C' },
+  },
+  {
+    type: 'condition',
+    label: 'Condition',
+    category: 'LOGIC',
+    icon: '⚙️',
+    data: {
+      label: 'New Condition',
+      sensor: 'Temperature',
+      operator: 'greater_than',
+      threshold: 80,
+      unit: '°C',
+    },
+  },
+  {
+    type: 'alert',
+    label: 'Send Alert',
+    category: 'ACTION',
+    icon: '🔔',
+    data: {
+      label: 'Send Alert',
+      action: 'Send Alert',
+      message: 'Temperature limit exceeded!',
     },
   },
 ];
 
-// ==========================================
-// 7. NODE TEMPLATES
-// ==========================================
-
-const nodeTemplates = {
-  sensor: {
-    type: 'sensor',
-    label: 'Temperature Sensor',
-    description: 'Collect machine temperature',
-  },
-
-  condition: {
-    type: 'condition',
-    label: 'Temperature > 80°C',
-    description: 'Check temperature threshold',
-  },
-
-  alert: {
-    type: 'alert',
-    label: 'Send Alert',
-    description: 'Notify machine operator',
-  },
-};
-
-// ==========================================
-// 8. MAIN APP COMPONENT
-// ==========================================
-
 function App() {
-  const [nodes, setNodes, onNodesChange] =
-    useNodesState(initialNodes);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
 
-  const [edges, setEdges, onEdgesChange] =
-    useEdgesState(initialEdges);
-
-  // React Flow instance reference
   const reactFlowInstance = useRef(null);
-
-  // Unique ID counter
   const idCounter = useRef(4);
 
-  // ========================================
-  // CONNECT NODES
-  // ========================================
+  const selectedNode = nodes.find((node) => node.id === selectedNodeId);
 
   const onConnect = useCallback(
-    (connection) => {
-      setEdges((currentEdges) =>
-        addEdge(
-          {
-            ...connection,
-            animated: true,
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-            },
-          },
-          currentEdges
-        )
-      );
-    },
+    (params) => setEdges((eds) => addEdge({
+      ...params,
+      animated: true,
+      markerEnd: { type: MarkerType.ArrowClosed },
+    }, eds)),
     [setEdges]
   );
 
-  // ========================================
-  // ADD NODE TO CANVAS
-  // ========================================
+  // Add a node to the canvas
+  const addNode = (template, position) => {
+    const id = String(idCounter.current++);
 
-  const addNode = useCallback(
-    (type, position) => {
-      const template = nodeTemplates[type];
+    const newNode = {
+      id,
+      type: template.type,
+      position: position || {
+        x: 150 + nodes.length * 35,
+        y: 100 + nodes.length * 35,
+      },
+      data: { ...template.data },
+    };
 
-      if (!template) return;
+    setNodes((currentNodes) => [...currentNodes, newNode]);
+    setSelectedNodeId(id);
+  };
 
-      const newNode = {
-        id: String(idCounter.current++),
-        type: template.type,
-        position,
-        data: {
-          label: template.label,
-          description: template.description,
-        },
-      };
-
-      setNodes((currentNodes) => [
-        ...currentNodes,
-        newNode,
-      ]);
-    },
-    [setNodes]
-  );
-
-  // ========================================
-  // DRAG NODE FROM SIDEBAR
-  // ========================================
-
-  const onDragStart = (event, nodeType) => {
-    event.dataTransfer.setData(
-      'application/reactflow',
-      nodeType
-    );
-
+  // Drag and drop support
+  const onDragStart = (event, template) => {
+    event.dataTransfer.setData('application/nexus-node', template.type);
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  // ========================================
-  // ALLOW DROP ON CANVAS
-  // ========================================
-
-  const onDragOver = useCallback((event) => {
+  const onDragOver = (event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-  }, []);
+  };
 
-  // ========================================
-  // DROP NODE ON CANVAS
-  // ========================================
+  const onDrop = (event) => {
+    event.preventDefault();
 
-  const onDrop = useCallback(
-    (event) => {
-      event.preventDefault();
+    const type = event.dataTransfer.getData('application/nexus-node');
+    const template = nodeTemplates.find((item) => item.type === type);
 
-      const type = event.dataTransfer.getData(
-        'application/reactflow'
-      );
+    if (!template || !reactFlowInstance.current) return;
 
-      if (!type || !reactFlowInstance.current) {
-        return;
-      }
+    const position = reactFlowInstance.current.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
 
-      const position =
-        reactFlowInstance.current.screenToFlowPosition({
-          x: event.clientX,
-          y: event.clientY,
-        });
+    addNode(template, position);
+  };
 
-      addNode(type, position);
-    },
-    [addNode]
-  );
-
-  // ========================================
-  // CLEAR CANVAS
-  // ========================================
+  // Update selected node properties
+  const updateNodeData = (field, value) => {
+    setNodes((currentNodes) =>
+      currentNodes.map((node) =>
+        node.id === selectedNodeId
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                [field]: value,
+              },
+            }
+          : node
+      )
+    );
+  };
 
   const clearCanvas = () => {
     setNodes([]);
     setEdges([]);
+    setSelectedNodeId(null);
   };
-
-  // ========================================
-  // MAIN UI
-  // ========================================
 
   return (
     <div className="app-container">
-
-      {/* TOP NAVIGATION */}
-
-      <header className="topbar">
-
+      <header className="app-header">
         <div className="brand">
-
-          <div className="brand-logo">
-            ⚡
-          </div>
-
+          <span className="brand-icon">✦</span>
           <div>
-            <h2>IoT Rule Engine</h2>
-            <span>Visual Workflow Builder</span>
+            <h1>NEXUS FLOW</h1>
+            <p>Dynamic IoT Rule Engine</p>
           </div>
-
         </div>
 
-        <div className="topbar-right">
-
-          <span className="status-indicator">
-            <span className="status-dot"></span>
-            Editor Ready
-          </span>
-
-          <button
-            className="clear-button"
-            onClick={clearCanvas}
-          >
-            Clear Canvas
-          </button>
-
+        <div className="header-status">
+          <span className="status-dot"></span>
+          Workflow Editor
         </div>
-
       </header>
 
-      {/* MAIN WORKSPACE */}
-
-      <div className="workspace">
-
-        {/* SIDEBAR */}
-
+      <main className="workspace">
         <aside className="sidebar">
-
           <div className="sidebar-heading">
-            <h3>Node Library</h3>
-            <p>Drag nodes onto the canvas</p>
+            <h2>NODE LIBRARY</h2>
+            <p>Drag nodes onto your canvas</p>
           </div>
 
-          {/* SENSOR CATEGORY */}
+          {['SENSOR', 'LOGIC', 'ACTION'].map((category) => (
+            <div className="node-category" key={category}>
+              <h3>{category}</h3>
 
-          <div className="node-category">
-
-            <span>INPUT</span>
-
-            <div
-              className="sidebar-node sensor-card"
-              draggable
-              onDragStart={(event) =>
-                onDragStart(event, 'sensor')
-              }
-              onClick={() =>
-                addNode('sensor', { x: 100, y: 100 })
-              }
-            >
-
-              <span className="sidebar-icon">◉</span>
-
-              <div>
-                <strong>Sensor</strong>
-                <small>Receive IoT data</small>
-              </div>
-
-              <span className="plus-icon">+</span>
-
+              {nodeTemplates
+                .filter((template) => template.category === category)
+                .map((template) => (
+                  <div
+                    key={template.type}
+                    className="library-node"
+                    draggable
+                    onDragStart={(event) => onDragStart(event, template)}
+                    onClick={() => addNode(template)}
+                  >
+                    <span className="library-icon">{template.icon}</span>
+                    <span>{template.label}</span>
+                    <span className="add-symbol">+</span>
+                  </div>
+                ))}
             </div>
+          ))}
 
-          </div>
-
-          {/* CONDITION CATEGORY */}
-
-          <div className="node-category">
-
-            <span>LOGIC</span>
-
-            <div
-              className="sidebar-node condition-card"
-              draggable
-              onDragStart={(event) =>
-                onDragStart(event, 'condition')
-              }
-              onClick={() =>
-                addNode('condition', { x: 100, y: 100 })
-              }
-            >
-
-              <span className="sidebar-icon">◇</span>
-
-              <div>
-                <strong>Condition</strong>
-                <small>Evaluate a rule</small>
-              </div>
-
-              <span className="plus-icon">+</span>
-
-            </div>
-
-          </div>
-
-          {/* ALERT CATEGORY */}
-
-          <div className="node-category">
-
-            <span>ACTIONS</span>
-
-            <div
-              className="sidebar-node alert-card"
-              draggable
-              onDragStart={(event) =>
-                onDragStart(event, 'alert')
-              }
-              onClick={() =>
-                addNode('alert', { x: 100, y: 100 })
-              }
-            >
-
-              <span className="sidebar-icon">⚡</span>
-
-              <div>
-                <strong>Alert</strong>
-                <small>Send notification</small>
-              </div>
-
-              <span className="plus-icon">+</span>
-
-            </div>
-
-          </div>
-
-          {/* SIDEBAR INSTRUCTIONS */}
-
-          <div className="sidebar-tip">
-
-            <strong>How to use</strong>
-
-            <p>
-              Drag a node into the workspace or click it
-              to add it. Connect nodes using their handles.
-            </p>
-
-          </div>
-
+          <button className="clear-button" onClick={clearCanvas}>
+            Clear Canvas
+          </button>
         </aside>
 
-        {/* WORKFLOW CANVAS */}
-
-        <main className="canvas-area">
-
+        <section className="canvas-section">
           <div className="canvas-toolbar">
-
             <div>
-              <h3>Workflow Canvas</h3>
-              <p>
-                Design your IoT automation visually
-              </p>
+              <h2>Workflow Canvas</h2>
+              <p>Design your IoT automation visually</p>
             </div>
 
             <div className="canvas-stats">
-
-              <span>
-                {nodes.length} Nodes
-              </span>
-
-              <span>
-                {edges.length} Connections
-              </span>
-
+              <span>{nodes.length} Nodes</span>
+              <span>{edges.length} Connections</span>
             </div>
-
           </div>
 
-          {/* REACT FLOW EDITOR */}
-
-          <div
-            className="flow-wrapper"
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-          >
-
+          <div className="flow-wrapper">
             <ReactFlow
               nodes={nodes}
               edges={edges}
               nodeTypes={nodeTypes}
-
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-
               onInit={(instance) => {
                 reactFlowInstance.current = instance;
               }}
-
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onNodeClick={(_, node) => setSelectedNodeId(node.id)}
+              onPaneClick={() => setSelectedNodeId(null)}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
               fitView
-
               deleteKeyCode={['Backspace', 'Delete']}
             >
-
-              <Background
-                color="#aeb8c7"
-                gap={20}
-                size={1}
-              />
-
+              <Background color="#34364d" gap={20} />
               <Controls />
-
-              <MiniMap
-                nodeStrokeWidth={3}
-                zoomable
-                pannable
-              />
-
+              <MiniMap nodeStrokeWidth={3} zoomable pannable />
             </ReactFlow>
-
           </div>
 
-          {/* CANVAS FOOTER */}
+          <div className="canvas-footer">
+            <span>● Editor Ready</span>
+            <span>Select a node to edit its properties</span>
+          </div>
+        </section>
 
-          <footer className="canvas-footer">
+        {selectedNode && (
+          <aside className="properties-panel">
+            <div className="properties-header">
+              <div>
+                <span className="properties-eyebrow">CONFIGURATION</span>
+                <h2>Node Properties</h2>
+              </div>
+              <button
+                className="close-panel"
+                onClick={() => setSelectedNodeId(null)}
+                title="Close panel"
+              >
+                ×
+              </button>
+            </div>
 
-            <span>● Visual Editor</span>
+            <div className="selected-node-info">
+              <span className="selected-node-icon">
+                {selectedNode.type === 'sensor'
+                  ? '🌡️'
+                  : selectedNode.type === 'condition'
+                    ? '⚙️'
+                    : '🔔'}
+              </span>
+              <div>
+                <strong>{selectedNode.data.label}</strong>
+                <small>{selectedNode.type.toUpperCase()} NODE</small>
+              </div>
+            </div>
 
-            <span>Built with React Flow</span>
+            <div className="property-field">
+              <label>Node Name</label>
+              <input
+                type="text"
+                value={selectedNode.data.label || ''}
+                onChange={(event) =>
+                  updateNodeData('label', event.target.value)
+                }
+              />
+            </div>
 
-          </footer>
+            {selectedNode.type === 'condition' && (
+              <>
+                <div className="property-divider"></div>
+                <h3 className="property-section-title">CONDITION SETTINGS</h3>
 
-        </main>
+                <div className="property-field">
+                  <label>Sensor Field</label>
+                  <select
+                    value={selectedNode.data.sensor || 'Temperature'}
+                    onChange={(event) =>
+                      updateNodeData('sensor', event.target.value)
+                    }
+                  >
+                    <option value="Temperature">Temperature</option>
+                    <option value="Humidity">Humidity</option>
+                    <option value="Pressure">Pressure</option>
+                  </select>
+                </div>
 
-      </div>
+                <div className="property-field">
+                  <label>Operator</label>
+                  <select
+                    value={selectedNode.data.operator || 'greater_than'}
+                    onChange={(event) =>
+                      updateNodeData('operator', event.target.value)
+                    }
+                  >
+                    <option value="greater_than">Greater Than (&gt;)</option>
+                    <option value="less_than">Less Than (&lt;)</option>
+                    <option value="equal_to">Equal To (=)</option>
+                    <option value="greater_equal">Greater or Equal (≥)</option>
+                    <option value="less_equal">Less or Equal (≤)</option>
+                  </select>
+                </div>
 
+                <div className="property-field">
+                  <label>Threshold Value</label>
+                  <input
+                    type="number"
+                    value={selectedNode.data.threshold ?? 80}
+                    onChange={(event) =>
+                      updateNodeData(
+                        'threshold',
+                        event.target.value === ''
+                          ? ''
+                          : Number(event.target.value)
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="property-field">
+                  <label>Unit</label>
+                  <select
+                    value={selectedNode.data.unit || '°C'}
+                    onChange={(event) =>
+                      updateNodeData('unit', event.target.value)
+                    }
+                  >
+                    <option value="°C">Celsius (°C)</option>
+                    <option value="%">Percent (%)</option>
+                    <option value="bar">Bar</option>
+                  </select>
+                </div>
+              </>
+            )}
+
+            {selectedNode.type === 'sensor' && (
+              <div className="property-field">
+                <label>Sensor Type</label>
+                <select
+                  value={selectedNode.data.sensor || 'Temperature'}
+                  onChange={(event) =>
+                    updateNodeData('sensor', event.target.value)
+                  }
+                >
+                  <option value="Temperature">Temperature</option>
+                  <option value="Humidity">Humidity</option>
+                  <option value="Pressure">Pressure</option>
+                </select>
+              </div>
+            )}
+
+            {selectedNode.type === 'alert' && (
+              <>
+                <div className="property-field">
+                  <label>Action</label>
+                  <select
+                    value={selectedNode.data.action || 'Send Alert'}
+                    onChange={(event) =>
+                      updateNodeData('action', event.target.value)
+                    }
+                  >
+                    <option value="Send Alert">Send Alert</option>
+                    <option value="Email Notification">Email Notification</option>
+                    <option value="Log Event">Log Event</option>
+                  </select>
+                </div>
+
+                <div className="property-field">
+                  <label>Alert Message</label>
+                  <textarea
+                    rows="4"
+                    value={selectedNode.data.message || ''}
+                    onChange={(event) =>
+                      updateNodeData('message', event.target.value)
+                    }
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="properties-note">
+              <span>ⓘ</span>
+              Changes are reflected immediately on the canvas.
+            </div>
+          </aside>
+        )}
+      </main>
     </div>
   );
 }
