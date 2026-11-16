@@ -44,6 +44,16 @@ const createTelemetryDocument = (data) => {
     };
 };
 
+// Validate and prepare multiple telemetry documents
+const createMultipleTelemetryDocuments = (dataArray) => {
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
+        throw new Error("Telemetry data must be a non-empty array");
+    }
+
+    return dataArray.map((data) => createTelemetryDocument(data));
+};
+
 module.exports = {
-    createTelemetryDocument
+    createTelemetryDocument,
+    createMultipleTelemetryDocuments
 };
