@@ -16,7 +16,10 @@ import {
 import '@xyflow/react/dist/style.css';
 import './App.css';
 
-// Initial workflow nodes
+// ==========================================
+// WEEK 1: INITIAL WORKFLOW
+// ==========================================
+
 const initialNodes = [
   {
     id: '1',
@@ -69,7 +72,10 @@ const initialEdges = [
   },
 ];
 
-// Custom Sensor Node
+// ==========================================
+// WEEK 1: ORIGINAL CUSTOM NODES
+// ==========================================
+
 function SensorNode({ data }) {
   return (
     <div className="node-card sensor-node">
@@ -84,7 +90,6 @@ function SensorNode({ data }) {
   );
 }
 
-// Custom Condition Node
 function ConditionNode({ data }) {
   const operators = {
     greater_than: '>',
@@ -102,8 +107,8 @@ function ConditionNode({ data }) {
         <strong>{data.label}</strong>
         <span>Condition</span>
         <small>
-          {data.sensor} {operators[data.operator] || '>'} {data.threshold}
-          {data.unit}
+          {data.sensor} {operators[data.operator] || '>'}{' '}
+          {data.threshold}{data.unit}
         </small>
       </div>
       <Handle type="source" position={Position.Bottom} />
@@ -111,7 +116,6 @@ function ConditionNode({ data }) {
   );
 }
 
-// Custom Alert Node
 function AlertNode({ data }) {
   return (
     <div className="node-card alert-node">
@@ -126,21 +130,118 @@ function AlertNode({ data }) {
   );
 }
 
+// ==========================================
+// WEEK 2: DATA SOURCE NODE
+// ==========================================
+
+function DataSourceNode({ data }) {
+  return (
+    <div className="node-card sensor-node">
+      <Handle type="source" position={Position.Bottom} />
+      <div className="node-icon">📡</div>
+      <div className="node-content">
+        <strong>{data.label}</strong>
+        <span>Data Source</span>
+        <small>{data.sourceType || 'IoT Input'}</small>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// WEEK 2: MATH OPERATION NODE
+// ==========================================
+
+function MathOperationNode({ data }) {
+  return (
+    <div className="node-card condition-node">
+      <Handle type="target" position={Position.Top} />
+      <div className="node-icon">🧮</div>
+      <div className="node-content">
+        <strong>{data.label}</strong>
+        <span>Math Operation</span>
+        <small>{data.operation || 'Add'}</small>
+      </div>
+      <Handle type="source" position={Position.Bottom} />
+    </div>
+  );
+}
+
+// ==========================================
+// WEEK 2: ACTION TRIGGER NODE
+// ==========================================
+
+function ActionTriggerNode({ data }) {
+  return (
+    <div className="node-card alert-node">
+      <Handle type="target" position={Position.Top} />
+      <div className="node-icon">⚡</div>
+      <div className="node-content">
+        <strong>{data.label}</strong>
+        <span>Action Trigger</span>
+        <small>{data.action || 'Webhook'}</small>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// REGISTER ALL CUSTOM NODE TYPES
+// ==========================================
+
 const nodeTypes = {
   sensor: SensorNode,
   condition: ConditionNode,
   alert: AlertNode,
+  dataSource: DataSourceNode,
+  mathOperation: MathOperationNode,
+  actionTrigger: ActionTriggerNode,
 };
 
+// ==========================================
+// NODE LIBRARY TEMPLATES
+// ==========================================
+
 const nodeTemplates = [
+  // DATA SOURCES
   {
+    id: 'temperature-sensor',
     type: 'sensor',
     label: 'Temperature Sensor',
-    category: 'SENSOR',
+    category: 'DATA SOURCES',
     icon: '🌡️',
-    data: { label: 'Temperature Sensor', sensor: 'Temperature', unit: '°C' },
+    data: {
+      label: 'Temperature Sensor',
+      sensor: 'Temperature',
+      unit: '°C',
+    },
   },
   {
+    id: 'mqtt-source',
+    type: 'dataSource',
+    label: 'MQTT Data Source',
+    category: 'DATA SOURCES',
+    icon: '📡',
+    data: {
+      label: 'MQTT Data Source',
+      sourceType: 'MQTT',
+    },
+  },
+  {
+    id: 'api-source',
+    type: 'dataSource',
+    label: 'API Data Source',
+    category: 'DATA SOURCES',
+    icon: '🔌',
+    data: {
+      label: 'API Data Source',
+      sourceType: 'REST API',
+    },
+  },
+
+  // LOGIC
+  {
+    id: 'condition',
     type: 'condition',
     label: 'Condition',
     category: 'LOGIC',
@@ -153,10 +254,48 @@ const nodeTemplates = [
       unit: '°C',
     },
   },
+
+  // MATH OPERATIONS
   {
+    id: 'addition',
+    type: 'mathOperation',
+    label: 'Addition',
+    category: 'MATH OPERATIONS',
+    icon: '➕',
+    data: {
+      label: 'Addition',
+      operation: 'Add',
+    },
+  },
+  {
+    id: 'multiplication',
+    type: 'mathOperation',
+    label: 'Multiplication',
+    category: 'MATH OPERATIONS',
+    icon: '✖️',
+    data: {
+      label: 'Multiplication',
+      operation: 'Multiply',
+    },
+  },
+  {
+    id: 'average',
+    type: 'mathOperation',
+    label: 'Average',
+    category: 'MATH OPERATIONS',
+    icon: '📊',
+    data: {
+      label: 'Average',
+      operation: 'Average',
+    },
+  },
+
+  // ACTION TRIGGERS
+  {
+    id: 'send-alert',
     type: 'alert',
     label: 'Send Alert',
-    category: 'ACTION',
+    category: 'ACTION TRIGGERS',
     icon: '🔔',
     data: {
       label: 'Send Alert',
@@ -164,28 +303,67 @@ const nodeTemplates = [
       message: 'Temperature limit exceeded!',
     },
   },
+  {
+    id: 'email-notification',
+    type: 'actionTrigger',
+    label: 'Email Notification',
+    category: 'ACTION TRIGGERS',
+    icon: '📧',
+    data: {
+      label: 'Email Notification',
+      action: 'Email',
+    },
+  },
+  {
+    id: 'webhook',
+    type: 'actionTrigger',
+    label: 'Webhook',
+    category: 'ACTION TRIGGERS',
+    icon: '⚡',
+    data: {
+      label: 'Webhook Trigger',
+      action: 'Webhook',
+    },
+  },
 ];
 
+// ==========================================
+// MAIN APP COMPONENT
+// ==========================================
+
 function App() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] =
+    useNodesState(initialNodes);
+
+  const [edges, setEdges, onEdgesChange] =
+    useEdgesState(initialEdges);
+
   const [selectedNodeId, setSelectedNodeId] = useState(null);
 
   const reactFlowInstance = useRef(null);
   const idCounter = useRef(4);
 
-  const selectedNode = nodes.find((node) => node.id === selectedNodeId);
+  const selectedNode = nodes.find(
+    (node) => node.id === selectedNodeId
+  );
 
+  // CONNECT NODES
   const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge({
-      ...params,
-      animated: true,
-      markerEnd: { type: MarkerType.ArrowClosed },
-    }, eds)),
+    (params) =>
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...params,
+            animated: true,
+            markerEnd: { type: MarkerType.ArrowClosed },
+          },
+          eds
+        )
+      ),
     [setEdges]
   );
 
-  // Add a node to the canvas
+  // ADD NODE TO CANVAS
   const addNode = (template, position) => {
     const id = String(idCounter.current++);
 
@@ -199,38 +377,54 @@ function App() {
       data: { ...template.data },
     };
 
-    setNodes((currentNodes) => [...currentNodes, newNode]);
+    setNodes((currentNodes) => [
+      ...currentNodes,
+      newNode,
+    ]);
+
     setSelectedNodeId(id);
   };
 
-  // Drag and drop support
+  // DRAG START
   const onDragStart = (event, template) => {
-    event.dataTransfer.setData('application/nexus-node', template.type);
+    event.dataTransfer.setData(
+      'application/nexus-node',
+      template.id
+    );
+
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  // DRAG OVER CANVAS
   const onDragOver = (event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   };
 
+  // DROP NODE ON CANVAS
   const onDrop = (event) => {
     event.preventDefault();
 
-    const type = event.dataTransfer.getData('application/nexus-node');
-    const template = nodeTemplates.find((item) => item.type === type);
+    const templateId = event.dataTransfer.getData(
+      'application/nexus-node'
+    );
+
+    const template = nodeTemplates.find(
+      (item) => item.id === templateId
+    );
 
     if (!template || !reactFlowInstance.current) return;
 
-    const position = reactFlowInstance.current.screenToFlowPosition({
-      x: event.clientX,
-      y: event.clientY,
-    });
+    const position =
+      reactFlowInstance.current.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
 
     addNode(template, position);
   };
 
-  // Update selected node properties
+  // UPDATE SELECTED NODE PROPERTIES
   const updateNodeData = (field, value) => {
     setNodes((currentNodes) =>
       currentNodes.map((node) =>
@@ -247,14 +441,35 @@ function App() {
     );
   };
 
+  // CLEAR CANVAS
   const clearCanvas = () => {
     setNodes([]);
     setEdges([]);
     setSelectedNodeId(null);
   };
 
+  // GET SELECTED NODE ICON
+  const getNodeIcon = (type) => {
+    const icons = {
+      sensor: '🌡️',
+      condition: '⚙️',
+      alert: '🔔',
+      dataSource: '📡',
+      mathOperation: '🧮',
+      actionTrigger: '⚡',
+    };
+
+    return icons[type] || '✦';
+  };
+
+  // ==========================================
+  // APP UI
+  // ==========================================
+
   return (
     <div className="app-container">
+
+      {/* HEADER */}
       <header className="app-header">
         <div className="brand">
           <span className="brand-icon">✦</span>
@@ -271,38 +486,63 @@ function App() {
       </header>
 
       <main className="workspace">
+
+        {/* ==================================
+            NODE LIBRARY SIDEBAR
+        ================================== */}
+
         <aside className="sidebar">
           <div className="sidebar-heading">
             <h2>NODE LIBRARY</h2>
             <p>Drag nodes onto your canvas</p>
           </div>
 
-          {['SENSOR', 'LOGIC', 'ACTION'].map((category) => (
+          {[
+            'DATA SOURCES',
+            'LOGIC',
+            'MATH OPERATIONS',
+            'ACTION TRIGGERS',
+          ].map((category) => (
             <div className="node-category" key={category}>
               <h3>{category}</h3>
 
               {nodeTemplates
-                .filter((template) => template.category === category)
+                .filter(
+                  (template) => template.category === category
+                )
                 .map((template) => (
                   <div
-                    key={template.type}
+                    key={template.id}
                     className="library-node"
                     draggable
-                    onDragStart={(event) => onDragStart(event, template)}
+                    onDragStart={(event) =>
+                      onDragStart(event, template)
+                    }
                     onClick={() => addNode(template)}
                   >
-                    <span className="library-icon">{template.icon}</span>
+                    <span className="library-icon">
+                      {template.icon}
+                    </span>
+
                     <span>{template.label}</span>
+
                     <span className="add-symbol">+</span>
                   </div>
                 ))}
             </div>
           ))}
 
-          <button className="clear-button" onClick={clearCanvas}>
+          <button
+            className="clear-button"
+            onClick={clearCanvas}
+          >
             Clear Canvas
           </button>
         </aside>
+
+        {/* ==================================
+            WORKFLOW CANVAS
+        ================================== */}
 
         <section className="canvas-section">
           <div className="canvas-toolbar">
@@ -328,7 +568,9 @@ function App() {
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={onConnect}
-              onNodeClick={(_, node) => setSelectedNodeId(node.id)}
+              onNodeClick={(_, node) =>
+                setSelectedNodeId(node.id)
+              }
               onPaneClick={() => setSelectedNodeId(null)}
               onDragOver={onDragOver}
               onDrop={onDrop}
@@ -343,17 +585,27 @@ function App() {
 
           <div className="canvas-footer">
             <span>● Editor Ready</span>
-            <span>Select a node to edit its properties</span>
+            <span>
+              Select a node to edit its properties
+            </span>
           </div>
         </section>
 
+        {/* ==================================
+            PROPERTIES PANEL
+        ================================== */}
+
         {selectedNode && (
           <aside className="properties-panel">
+
             <div className="properties-header">
               <div>
-                <span className="properties-eyebrow">CONFIGURATION</span>
+                <span className="properties-eyebrow">
+                  CONFIGURATION
+                </span>
                 <h2>Node Properties</h2>
               </div>
+
               <button
                 className="close-panel"
                 onClick={() => setSelectedNodeId(null)}
@@ -363,19 +615,22 @@ function App() {
               </button>
             </div>
 
+            {/* SELECTED NODE INFO */}
+
             <div className="selected-node-info">
               <span className="selected-node-icon">
-                {selectedNode.type === 'sensor'
-                  ? '🌡️'
-                  : selectedNode.type === 'condition'
-                    ? '⚙️'
-                    : '🔔'}
+                {getNodeIcon(selectedNode.type)}
               </span>
+
               <div>
                 <strong>{selectedNode.data.label}</strong>
-                <small>{selectedNode.type.toUpperCase()} NODE</small>
+                <small>
+                  {selectedNode.type.toUpperCase()} NODE
+                </small>
               </div>
             </div>
+
+            {/* COMMON NODE NAME */}
 
             <div className="property-field">
               <label>Node Name</label>
@@ -388,15 +643,23 @@ function App() {
               />
             </div>
 
+            {/* WEEK 1: CONDITION SETTINGS */}
+
             {selectedNode.type === 'condition' && (
               <>
                 <div className="property-divider"></div>
-                <h3 className="property-section-title">CONDITION SETTINGS</h3>
+
+                <h3 className="property-section-title">
+                  CONDITION SETTINGS
+                </h3>
 
                 <div className="property-field">
                   <label>Sensor Field</label>
+
                   <select
-                    value={selectedNode.data.sensor || 'Temperature'}
+                    value={
+                      selectedNode.data.sensor || 'Temperature'
+                    }
                     onChange={(event) =>
                       updateNodeData('sensor', event.target.value)
                     }
@@ -409,22 +672,36 @@ function App() {
 
                 <div className="property-field">
                   <label>Operator</label>
+
                   <select
-                    value={selectedNode.data.operator || 'greater_than'}
+                    value={
+                      selectedNode.data.operator || 'greater_than'
+                    }
                     onChange={(event) =>
                       updateNodeData('operator', event.target.value)
                     }
                   >
-                    <option value="greater_than">Greater Than (&gt;)</option>
-                    <option value="less_than">Less Than (&lt;)</option>
-                    <option value="equal_to">Equal To (=)</option>
-                    <option value="greater_equal">Greater or Equal (≥)</option>
-                    <option value="less_equal">Less or Equal (≤)</option>
+                    <option value="greater_than">
+                      Greater Than (&gt;)
+                    </option>
+                    <option value="less_than">
+                      Less Than (&lt;)
+                    </option>
+                    <option value="equal_to">
+                      Equal To (=)
+                    </option>
+                    <option value="greater_equal">
+                      Greater or Equal (≥)
+                    </option>
+                    <option value="less_equal">
+                      Less or Equal (≤)
+                    </option>
                   </select>
                 </div>
 
                 <div className="property-field">
                   <label>Threshold Value</label>
+
                   <input
                     type="number"
                     value={selectedNode.data.threshold ?? 80}
@@ -441,6 +718,7 @@ function App() {
 
                 <div className="property-field">
                   <label>Unit</label>
+
                   <select
                     value={selectedNode.data.unit || '°C'}
                     onChange={(event) =>
@@ -455,11 +733,16 @@ function App() {
               </>
             )}
 
+            {/* WEEK 1: SENSOR SETTINGS */}
+
             {selectedNode.type === 'sensor' && (
               <div className="property-field">
                 <label>Sensor Type</label>
+
                 <select
-                  value={selectedNode.data.sensor || 'Temperature'}
+                  value={
+                    selectedNode.data.sensor || 'Temperature'
+                  }
                   onChange={(event) =>
                     updateNodeData('sensor', event.target.value)
                   }
@@ -471,24 +754,103 @@ function App() {
               </div>
             )}
 
+            {/* WEEK 2: DATA SOURCE SETTINGS */}
+
+            {selectedNode.type === 'dataSource' && (
+              <>
+                <div className="property-divider"></div>
+
+                <h3 className="property-section-title">
+                  DATA SOURCE SETTINGS
+                </h3>
+
+                <div className="property-field">
+                  <label>Source Type</label>
+
+                  <select
+                    value={
+                      selectedNode.data.sourceType || 'MQTT'
+                    }
+                    onChange={(event) =>
+                      updateNodeData(
+                        'sourceType',
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option value="MQTT">MQTT</option>
+                    <option value="REST API">REST API</option>
+                  </select>
+                </div>
+              </>
+            )}
+
+            {/* WEEK 2: MATH OPERATION SETTINGS */}
+
+            {selectedNode.type === 'mathOperation' && (
+              <>
+                <div className="property-divider"></div>
+
+                <h3 className="property-section-title">
+                  MATH OPERATION SETTINGS
+                </h3>
+
+                <div className="property-field">
+                  <label>Operation</label>
+
+                  <select
+                    value={
+                      selectedNode.data.operation || 'Add'
+                    }
+                    onChange={(event) =>
+                      updateNodeData(
+                        'operation',
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option value="Add">Addition (+)</option>
+                    <option value="Subtract">Subtraction (-)</option>
+                    <option value="Multiply">Multiplication (×)</option>
+                    <option value="Divide">Division (÷)</option>
+                    <option value="Average">Average</option>
+                  </select>
+                </div>
+              </>
+            )}
+
+            {/* WEEK 1: ALERT SETTINGS */}
+
             {selectedNode.type === 'alert' && (
               <>
+                <div className="property-divider"></div>
+
+                <h3 className="property-section-title">
+                  ALERT SETTINGS
+                </h3>
+
                 <div className="property-field">
                   <label>Action</label>
+
                   <select
-                    value={selectedNode.data.action || 'Send Alert'}
+                    value={
+                      selectedNode.data.action || 'Send Alert'
+                    }
                     onChange={(event) =>
                       updateNodeData('action', event.target.value)
                     }
                   >
                     <option value="Send Alert">Send Alert</option>
-                    <option value="Email Notification">Email Notification</option>
+                    <option value="Email Notification">
+                      Email Notification
+                    </option>
                     <option value="Log Event">Log Event</option>
                   </select>
                 </div>
 
                 <div className="property-field">
                   <label>Alert Message</label>
+
                   <textarea
                     rows="4"
                     value={selectedNode.data.message || ''}
@@ -500,12 +862,42 @@ function App() {
               </>
             )}
 
+            {/* WEEK 2: ACTION TRIGGER SETTINGS */}
+
+            {selectedNode.type === 'actionTrigger' && (
+              <>
+                <div className="property-divider"></div>
+
+                <h3 className="property-section-title">
+                  ACTION TRIGGER SETTINGS
+                </h3>
+
+                <div className="property-field">
+                  <label>Action Type</label>
+
+                  <select
+                    value={
+                      selectedNode.data.action || 'Webhook'
+                    }
+                    onChange={(event) =>
+                      updateNodeData('action', event.target.value)
+                    }
+                  >
+                    <option value="Email">Email</option>
+                    <option value="Webhook">Webhook</option>
+                  </select>
+                </div>
+              </>
+            )}
+
             <div className="properties-note">
               <span>ⓘ</span>
               Changes are reflected immediately on the canvas.
             </div>
+
           </aside>
         )}
+
       </main>
     </div>
   );
