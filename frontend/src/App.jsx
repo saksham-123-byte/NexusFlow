@@ -1,4 +1,3 @@
-
 import { useCallback, useRef, useState } from 'react';
 import {
   ReactFlow,
@@ -73,18 +72,156 @@ const initialEdges = [
 ];
 
 // ==========================================
+// WEEK 2: NODE VALIDATION HELPERS
+// ==========================================
+
+const validOperators = [
+  'greater_than',
+  'less_than',
+  'equal_to',
+  'greater_equal',
+  'less_equal',
+];
+
+const validMathOperations = [
+  'Add',
+  'Subtract',
+  'Multiply',
+  'Divide',
+  'Average',
+];
+
+function getNodeValidationErrors(node) {
+  const data = node.data || {};
+  const errors = [];
+
+  if (!String(data.label || '').trim()) {
+    errors.push('Node name is required.');
+  }
+
+  if (node.type === 'sensor') {
+    if (
+      !['Temperature', 'Humidity', 'Pressure'].includes(
+        data.sensor
+      )
+    ) {
+      errors.push('Select a valid sensor type.');
+    }
+  }
+
+  if (node.type === 'dataSource') {
+    if (!['MQTT', 'REST API'].includes(data.sourceType)) {
+      errors.push(
+        'Select MQTT or REST API as the source type.'
+      );
+    }
+
+    const endpoint = String(data.endpoint || '').trim();
+
+    if (!endpoint) {
+      errors.push(
+        data.sourceType === 'MQTT'
+          ? 'MQTT broker URL is required.'
+          : 'REST API endpoint URL is required.'
+      );
+    } else {
+      const allowed =
+        data.sourceType === 'MQTT'
+          ? /^(mqtt|mqtts|ws|wss):\/\//i
+          : /^https?:\/\//i;
+
+      if (!allowed.test(endpoint)) {
+        errors.push(
+          data.sourceType === 'MQTT'
+            ? 'Use an mqtt://, mqtts://, ws:// or wss:// URL.'
+            : 'REST API URL must start with http:// or https://.'
+        );
+      }
+    }
+  }
+
+  if (node.type === 'condition') {
+    if (!validOperators.includes(data.operator)) {
+      errors.push('Select a valid condition operator.');
+    }
+
+    if (
+      data.threshold === '' ||
+      data.threshold === null ||
+      data.threshold === undefined ||
+      !Number.isFinite(Number(data.threshold))
+    ) {
+      errors.push('Threshold must be a valid number.');
+    }
+  }
+
+  if (
+    node.type === 'mathOperation' &&
+    !validMathOperations.includes(data.operation)
+  ) {
+    errors.push('Select a valid math operation.');
+  }
+
+  if (
+    node.type === 'alert' &&
+    !String(data.message || '').trim()
+  ) {
+    errors.push('Alert message is required.');
+  }
+
+  if (node.type === 'actionTrigger') {
+    if (!['Email', 'Webhook'].includes(data.action)) {
+      errors.push('Select Email or Webhook as the action type.');
+    } else if (data.action === 'Email') {
+      const email = String(data.recipient || '').trim();
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        errors.push('Enter a valid recipient email address.');
+      }
+    } else {
+      const url = String(data.endpoint || '').trim();
+
+      if (!/^https?:\/\//i.test(url)) {
+        errors.push(
+          'Enter a valid webhook URL starting with http:// or https://.'
+        );
+      }
+    }
+  }
+
+  return errors;
+}
+
+// ==========================================
 // WEEK 1: ORIGINAL CUSTOM NODES
 // ==========================================
 
 function SensorNode({ data }) {
   return (
-    <div className="node-card sensor-node">
-      <Handle type="source" position={Position.Bottom} />
+    <div
+      className={`node-card sensor-node ${
+        data.validationErrors?.length
+          ? 'node-invalid'
+          : 'node-valid'
+      }`}
+    >
+      {data.validationErrors?.length > 0 && (
+        <span className="node-validation-badge">!</span>
+      )}
+
+      <Handle
+        type="source"
+        position={Position.Bottom}
+      />
+
       <div className="node-icon">🌡️</div>
+
       <div className="node-content">
         <strong>{data.label}</strong>
         <span>Sensor Input</span>
-        <small>{data.sensor} ({data.unit})</small>
+        <small>
+          {data.sensor} ({data.unit})
+        </small>
       </div>
     </div>
   );
@@ -100,27 +237,63 @@ function ConditionNode({ data }) {
   };
 
   return (
-    <div className="node-card condition-node">
-      <Handle type="target" position={Position.Top} />
+    <div
+      className={`node-card condition-node ${
+        data.validationErrors?.length
+          ? 'node-invalid'
+          : 'node-valid'
+      }`}
+    >
+      {data.validationErrors?.length > 0 && (
+        <span className="node-validation-badge">!</span>
+      )}
+
+      <Handle
+        type="target"
+        position={Position.Top}
+      />
+
       <div className="node-icon">⚙️</div>
+
       <div className="node-content">
         <strong>{data.label}</strong>
         <span>Condition</span>
+
         <small>
           {data.sensor} {operators[data.operator] || '>'}{' '}
-          {data.threshold}{data.unit}
+          {data.threshold}
+          {data.unit}
         </small>
       </div>
-      <Handle type="source" position={Position.Bottom} />
+
+      <Handle
+        type="source"
+        position={Position.Bottom}
+      />
     </div>
   );
 }
 
 function AlertNode({ data }) {
   return (
-    <div className="node-card alert-node">
-      <Handle type="target" position={Position.Top} />
+    <div
+      className={`node-card alert-node ${
+        data.validationErrors?.length
+          ? 'node-invalid'
+          : 'node-valid'
+      }`}
+    >
+      {data.validationErrors?.length > 0 && (
+        <span className="node-validation-badge">!</span>
+      )}
+
+      <Handle
+        type="target"
+        position={Position.Top}
+      />
+
       <div className="node-icon">🔔</div>
+
       <div className="node-content">
         <strong>{data.label}</strong>
         <span>Action</span>
@@ -136,9 +309,24 @@ function AlertNode({ data }) {
 
 function DataSourceNode({ data }) {
   return (
-    <div className="node-card sensor-node">
-      <Handle type="source" position={Position.Bottom} />
+    <div
+      className={`node-card sensor-node ${
+        data.validationErrors?.length
+          ? 'node-invalid'
+          : 'node-valid'
+      }`}
+    >
+      {data.validationErrors?.length > 0 && (
+        <span className="node-validation-badge">!</span>
+      )}
+
+      <Handle
+        type="source"
+        position={Position.Bottom}
+      />
+
       <div className="node-icon">📡</div>
+
       <div className="node-content">
         <strong>{data.label}</strong>
         <span>Data Source</span>
@@ -154,15 +342,34 @@ function DataSourceNode({ data }) {
 
 function MathOperationNode({ data }) {
   return (
-    <div className="node-card condition-node">
-      <Handle type="target" position={Position.Top} />
+    <div
+      className={`node-card condition-node ${
+        data.validationErrors?.length
+          ? 'node-invalid'
+          : 'node-valid'
+      }`}
+    >
+      {data.validationErrors?.length > 0 && (
+        <span className="node-validation-badge">!</span>
+      )}
+
+      <Handle
+        type="target"
+        position={Position.Top}
+      />
+
       <div className="node-icon">🧮</div>
+
       <div className="node-content">
         <strong>{data.label}</strong>
         <span>Math Operation</span>
         <small>{data.operation || 'Add'}</small>
       </div>
-      <Handle type="source" position={Position.Bottom} />
+
+      <Handle
+        type="source"
+        position={Position.Bottom}
+      />
     </div>
   );
 }
@@ -173,9 +380,24 @@ function MathOperationNode({ data }) {
 
 function ActionTriggerNode({ data }) {
   return (
-    <div className="node-card alert-node">
-      <Handle type="target" position={Position.Top} />
+    <div
+      className={`node-card alert-node ${
+        data.validationErrors?.length
+          ? 'node-invalid'
+          : 'node-valid'
+      }`}
+    >
+      {data.validationErrors?.length > 0 && (
+        <span className="node-validation-badge">!</span>
+      )}
+
+      <Handle
+        type="target"
+        position={Position.Top}
+      />
+
       <div className="node-icon">⚡</div>
+
       <div className="node-content">
         <strong>{data.label}</strong>
         <span>Action Trigger</span>
@@ -203,7 +425,6 @@ const nodeTypes = {
 // ==========================================
 
 const nodeTemplates = [
-  // DATA SOURCES
   {
     id: 'temperature-sensor',
     type: 'sensor',
@@ -225,6 +446,7 @@ const nodeTemplates = [
     data: {
       label: 'MQTT Data Source',
       sourceType: 'MQTT',
+      endpoint: '',
     },
   },
   {
@@ -236,10 +458,9 @@ const nodeTemplates = [
     data: {
       label: 'API Data Source',
       sourceType: 'REST API',
+      endpoint: '',
     },
   },
-
-  // LOGIC
   {
     id: 'condition',
     type: 'condition',
@@ -254,8 +475,6 @@ const nodeTemplates = [
       unit: '°C',
     },
   },
-
-  // MATH OPERATIONS
   {
     id: 'addition',
     type: 'mathOperation',
@@ -289,8 +508,6 @@ const nodeTemplates = [
       operation: 'Average',
     },
   },
-
-  // ACTION TRIGGERS
   {
     id: 'send-alert',
     type: 'alert',
@@ -347,6 +564,18 @@ function App() {
     (node) => node.id === selectedNodeId
   );
 
+  const displayNodes = nodes.map((node) => ({
+    ...node,
+    data: {
+      ...node.data,
+      validationErrors: getNodeValidationErrors(node),
+    },
+  }));
+
+  const invalidNodeCount = nodes.filter(
+    (node) => getNodeValidationErrors(node).length > 0
+  ).length;
+
   // CONNECT NODES
   const onConnect = useCallback(
     (params) =>
@@ -355,7 +584,9 @@ function App() {
           {
             ...params,
             animated: true,
-            markerEnd: { type: MarkerType.ArrowClosed },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+            },
           },
           eds
         )
@@ -468,11 +699,11 @@ function App() {
 
   return (
     <div className="app-container">
-
       {/* HEADER */}
       <header className="app-header">
         <div className="brand">
           <span className="brand-icon">✦</span>
+
           <div>
             <h1>NEXUS FLOW</h1>
             <p>Dynamic IoT Rule Engine</p>
@@ -486,11 +717,7 @@ function App() {
       </header>
 
       <main className="workspace">
-
-        {/* ==================================
-            NODE LIBRARY SIDEBAR
-        ================================== */}
-
+        {/* NODE LIBRARY SIDEBAR */}
         <aside className="sidebar">
           <div className="sidebar-heading">
             <h2>NODE LIBRARY</h2>
@@ -503,12 +730,16 @@ function App() {
             'MATH OPERATIONS',
             'ACTION TRIGGERS',
           ].map((category) => (
-            <div className="node-category" key={category}>
+            <div
+              className="node-category"
+              key={category}
+            >
               <h3>{category}</h3>
 
               {nodeTemplates
                 .filter(
-                  (template) => template.category === category
+                  (template) =>
+                    template.category === category
                 )
                 .map((template) => (
                   <div
@@ -540,10 +771,7 @@ function App() {
           </button>
         </aside>
 
-        {/* ==================================
-            WORKFLOW CANVAS
-        ================================== */}
-
+        {/* WORKFLOW CANVAS */}
         <section className="canvas-section">
           <div className="canvas-toolbar">
             <div>
@@ -554,12 +782,22 @@ function App() {
             <div className="canvas-stats">
               <span>{nodes.length} Nodes</span>
               <span>{edges.length} Connections</span>
+
+              <span
+                className={
+                  invalidNodeCount > 0
+                    ? 'validation-count has-errors'
+                    : 'validation-count'
+                }
+              >
+                {invalidNodeCount} Invalid
+              </span>
             </div>
           </div>
 
           <div className="flow-wrapper">
             <ReactFlow
-              nodes={nodes}
+              nodes={displayNodes}
               edges={edges}
               nodeTypes={nodeTypes}
               onInit={(instance) => {
@@ -571,38 +809,47 @@ function App() {
               onNodeClick={(_, node) =>
                 setSelectedNodeId(node.id)
               }
-              onPaneClick={() => setSelectedNodeId(null)}
+              onPaneClick={() =>
+                setSelectedNodeId(null)
+              }
               onDragOver={onDragOver}
               onDrop={onDrop}
               fitView
               deleteKeyCode={['Backspace', 'Delete']}
             >
-              <Background color="#34364d" gap={20} />
+              <Background
+                color="#34364d"
+                gap={20}
+              />
+
               <Controls />
-              <MiniMap nodeStrokeWidth={3} zoomable pannable />
+
+              <MiniMap
+                nodeStrokeWidth={3}
+                zoomable
+                pannable
+              />
             </ReactFlow>
           </div>
 
           <div className="canvas-footer">
             <span>● Editor Ready</span>
+
             <span>
               Select a node to edit its properties
             </span>
           </div>
         </section>
 
-        {/* ==================================
-            PROPERTIES PANEL
-        ================================== */}
-
+        {/* PROPERTIES PANEL */}
         {selectedNode && (
           <aside className="properties-panel">
-
             <div className="properties-header">
               <div>
                 <span className="properties-eyebrow">
                   CONFIGURATION
                 </span>
+
                 <h2>Node Properties</h2>
               </div>
 
@@ -616,7 +863,6 @@ function App() {
             </div>
 
             {/* SELECTED NODE INFO */}
-
             <div className="selected-node-info">
               <span className="selected-node-icon">
                 {getNodeIcon(selectedNode.type)}
@@ -624,16 +870,40 @@ function App() {
 
               <div>
                 <strong>{selectedNode.data.label}</strong>
+
                 <small>
                   {selectedNode.type.toUpperCase()} NODE
                 </small>
               </div>
             </div>
 
-            {/* COMMON NODE NAME */}
+            {/* NODE VALIDATION STATUS */}
+            {getNodeValidationErrors(selectedNode).length > 0 ? (
+              <div className="validation-panel validation-error">
+                <strong>Needs attention</strong>
 
+                <ul>
+                  {getNodeValidationErrors(selectedNode).map(
+                    (error) => (
+                      <li key={error}>{error}</li>
+                    )
+                  )}
+                </ul>
+              </div>
+            ) : (
+              <div className="validation-panel validation-success">
+                <strong>✓ Configuration valid</strong>
+
+                <span>
+                  This node has passed the current checks.
+                </span>
+              </div>
+            )}
+
+            {/* COMMON NODE NAME */}
             <div className="property-field">
               <label>Node Name</label>
+
               <input
                 type="text"
                 value={selectedNode.data.label || ''}
@@ -643,8 +913,7 @@ function App() {
               />
             </div>
 
-            {/* WEEK 1: CONDITION SETTINGS */}
-
+            {/* CONDITION SETTINGS */}
             {selectedNode.type === 'condition' && (
               <>
                 <div className="property-divider"></div>
@@ -664,9 +933,17 @@ function App() {
                       updateNodeData('sensor', event.target.value)
                     }
                   >
-                    <option value="Temperature">Temperature</option>
-                    <option value="Humidity">Humidity</option>
-                    <option value="Pressure">Pressure</option>
+                    <option value="Temperature">
+                      Temperature
+                    </option>
+
+                    <option value="Humidity">
+                      Humidity
+                    </option>
+
+                    <option value="Pressure">
+                      Pressure
+                    </option>
                   </select>
                 </div>
 
@@ -684,15 +961,19 @@ function App() {
                     <option value="greater_than">
                       Greater Than (&gt;)
                     </option>
+
                     <option value="less_than">
                       Less Than (&lt;)
                     </option>
+
                     <option value="equal_to">
                       Equal To (=)
                     </option>
+
                     <option value="greater_equal">
                       Greater or Equal (≥)
                     </option>
+
                     <option value="less_equal">
                       Less or Equal (≤)
                     </option>
@@ -733,8 +1014,7 @@ function App() {
               </>
             )}
 
-            {/* WEEK 1: SENSOR SETTINGS */}
-
+            {/* SENSOR SETTINGS */}
             {selectedNode.type === 'sensor' && (
               <div className="property-field">
                 <label>Sensor Type</label>
@@ -747,15 +1027,22 @@ function App() {
                     updateNodeData('sensor', event.target.value)
                   }
                 >
-                  <option value="Temperature">Temperature</option>
-                  <option value="Humidity">Humidity</option>
-                  <option value="Pressure">Pressure</option>
+                  <option value="Temperature">
+                    Temperature
+                  </option>
+
+                  <option value="Humidity">
+                    Humidity
+                  </option>
+
+                  <option value="Pressure">
+                    Pressure
+                  </option>
                 </select>
               </div>
             )}
 
-            {/* WEEK 2: DATA SOURCE SETTINGS */}
-
+            {/* DATA SOURCE SETTINGS */}
             {selectedNode.type === 'dataSource' && (
               <>
                 <div className="property-divider"></div>
@@ -782,11 +1069,31 @@ function App() {
                     <option value="REST API">REST API</option>
                   </select>
                 </div>
+
+                <div className="property-field">
+                  <label>
+                    {selectedNode.data.sourceType === 'MQTT'
+                      ? 'MQTT Broker URL'
+                      : 'REST API URL'}
+                  </label>
+
+                  <input
+                    type="text"
+                    placeholder={
+                      selectedNode.data.sourceType === 'MQTT'
+                        ? 'mqtt://broker.example.com:1883'
+                        : 'https://api.example.com/data'
+                    }
+                    value={selectedNode.data.endpoint || ''}
+                    onChange={(event) =>
+                      updateNodeData('endpoint', event.target.value)
+                    }
+                  />
+                </div>
               </>
             )}
 
-            {/* WEEK 2: MATH OPERATION SETTINGS */}
-
+            {/* MATH OPERATION SETTINGS */}
             {selectedNode.type === 'mathOperation' && (
               <>
                 <div className="property-divider"></div>
@@ -811,7 +1118,9 @@ function App() {
                   >
                     <option value="Add">Addition (+)</option>
                     <option value="Subtract">Subtraction (-)</option>
-                    <option value="Multiply">Multiplication (×)</option>
+                    <option value="Multiply">
+                      Multiplication (×)
+                    </option>
                     <option value="Divide">Division (÷)</option>
                     <option value="Average">Average</option>
                   </select>
@@ -819,8 +1128,7 @@ function App() {
               </>
             )}
 
-            {/* WEEK 1: ALERT SETTINGS */}
-
+            {/* ALERT SETTINGS */}
             {selectedNode.type === 'alert' && (
               <>
                 <div className="property-divider"></div>
@@ -841,9 +1149,11 @@ function App() {
                     }
                   >
                     <option value="Send Alert">Send Alert</option>
+
                     <option value="Email Notification">
                       Email Notification
                     </option>
+
                     <option value="Log Event">Log Event</option>
                   </select>
                 </div>
@@ -862,8 +1172,7 @@ function App() {
               </>
             )}
 
-            {/* WEEK 2: ACTION TRIGGER SETTINGS */}
-
+            {/* ACTION TRIGGER SETTINGS */}
             {selectedNode.type === 'actionTrigger' && (
               <>
                 <div className="property-divider"></div>
@@ -887,17 +1196,51 @@ function App() {
                     <option value="Webhook">Webhook</option>
                   </select>
                 </div>
+
+                {selectedNode.data.action === 'Email' ? (
+                  <div className="property-field">
+                    <label>Recipient Email</label>
+
+                    <input
+                      type="email"
+                      placeholder="alerts@example.com"
+                      value={selectedNode.data.recipient || ''}
+                      onChange={(event) =>
+                        updateNodeData(
+                          'recipient',
+                          event.target.value
+                        )
+                      }
+                    />
+                  </div>
+                ) : (
+                  <div className="property-field">
+                    <label>Webhook URL</label>
+
+                    <input
+                      type="url"
+                      placeholder="https://example.com/webhook"
+                      value={selectedNode.data.endpoint || ''}
+                      onChange={(event) =>
+                        updateNodeData(
+                          'endpoint',
+                          event.target.value
+                        )
+                      }
+                    />
+                  </div>
+                )}
               </>
             )}
 
             <div className="properties-note">
               <span>ⓘ</span>
-              Changes are reflected immediately on the canvas.
-            </div>
 
+              Changes are reflected immediately. Validation checks
+              configuration only; it does not execute the workflow.
+            </div>
           </aside>
         )}
-
       </main>
     </div>
   );
