@@ -972,4 +972,26 @@ button {
   height: 9px;
   border: 2px solid #ffffff;
 }
+/* Validation Error Text Styling */
 
+.validation-error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid #ef4444;
+  color: #fca5a5 !important;
+}
+
+.validation-error strong {
+  color: #f87171 !important;
+}
+
+.validation-error ul {
+  color: #fca5a5 !important;
+}
+
+.validation-error li {
+  color: #fca5a5 !important;
+}
+
+.validation-success {
+  color: #86efac !important;
+}

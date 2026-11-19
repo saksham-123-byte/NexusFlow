@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+
 import {
   ReactFlow,
   Background,
@@ -190,6 +191,49 @@ function getNodeValidationErrors(node) {
   }
 
   return errors;
+}
+
+// ==========================================
+// WEEK 2: CONNECTION VALIDATION
+// ==========================================
+
+function isAllowedConnection(connection, nodes, edges) {
+  const { source, target } = connection;
+
+  // Prevent missing endpoints and self-connections.
+  if (!source || !target || source === target) {
+    return false;
+  }
+
+  const sourceNode = nodes.find((node) => node.id === source);
+  const targetNode = nodes.find((node) => node.id === target);
+
+  if (!sourceNode || !targetNode) {
+    return false;
+  }
+
+  // Define which node types can connect to which targets.
+  const allowedTargets = {
+    sensor: ['mathOperation', 'condition'],
+    dataSource: ['mathOperation', 'condition'],
+    mathOperation: ['mathOperation', 'condition'],
+    condition: ['alert', 'actionTrigger'],
+    alert: [],
+    actionTrigger: [],
+  };
+
+  const allowedTypes = allowedTargets[sourceNode.type] || [];
+
+  if (!allowedTypes.includes(targetNode.type)) {
+    return false;
+  }
+
+  // Prevent duplicate connections between the same nodes.
+  const alreadyConnected = edges.some(
+    (edge) => edge.source === source && edge.target === target
+  );
+
+  return !alreadyConnected;
 }
 
 // ==========================================
@@ -576,9 +620,22 @@ function App() {
     (node) => getNodeValidationErrors(node).length > 0
   ).length;
 
-  // CONNECT NODES
+  // ==========================================
+  // CONNECT NODES WITH VALIDATION
+  // ==========================================
+
+  const isValidConnection = useCallback(
+    (connection) =>
+      isAllowedConnection(connection, nodes, edges),
+    [nodes, edges]
+  );
+
   const onConnect = useCallback(
-    (params) =>
+    (params) => {
+      if (!isAllowedConnection(params, nodes, edges)) {
+        return;
+      }
+
       setEdges((eds) =>
         addEdge(
           {
@@ -590,11 +647,13 @@ function App() {
           },
           eds
         )
-      ),
-    [setEdges]
+      );
+    },
+    [nodes, edges, setEdges]
   );
 
   // ADD NODE TO CANVAS
+
   const addNode = (template, position) => {
     const id = String(idCounter.current++);
 
@@ -617,6 +676,7 @@ function App() {
   };
 
   // DRAG START
+
   const onDragStart = (event, template) => {
     event.dataTransfer.setData(
       'application/nexus-node',
@@ -627,12 +687,14 @@ function App() {
   };
 
   // DRAG OVER CANVAS
+
   const onDragOver = (event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   };
 
   // DROP NODE ON CANVAS
+
   const onDrop = (event) => {
     event.preventDefault();
 
@@ -656,6 +718,7 @@ function App() {
   };
 
   // UPDATE SELECTED NODE PROPERTIES
+
   const updateNodeData = (field, value) => {
     setNodes((currentNodes) =>
       currentNodes.map((node) =>
@@ -673,6 +736,7 @@ function App() {
   };
 
   // CLEAR CANVAS
+
   const clearCanvas = () => {
     setNodes([]);
     setEdges([]);
@@ -680,6 +744,7 @@ function App() {
   };
 
   // GET SELECTED NODE ICON
+
   const getNodeIcon = (type) => {
     const icons = {
       sensor: '🌡️',
@@ -700,6 +765,7 @@ function App() {
   return (
     <div className="app-container">
       {/* HEADER */}
+
       <header className="app-header">
         <div className="brand">
           <span className="brand-icon">✦</span>
@@ -718,6 +784,7 @@ function App() {
 
       <main className="workspace">
         {/* NODE LIBRARY SIDEBAR */}
+
         <aside className="sidebar">
           <div className="sidebar-heading">
             <h2>NODE LIBRARY</h2>
@@ -772,6 +839,7 @@ function App() {
         </aside>
 
         {/* WORKFLOW CANVAS */}
+
         <section className="canvas-section">
           <div className="canvas-toolbar">
             <div>
@@ -800,6 +868,7 @@ function App() {
               nodes={displayNodes}
               edges={edges}
               nodeTypes={nodeTypes}
+              isValidConnection={isValidConnection}
               onInit={(instance) => {
                 reactFlowInstance.current = instance;
               }}
@@ -842,6 +911,7 @@ function App() {
         </section>
 
         {/* PROPERTIES PANEL */}
+
         {selectedNode && (
           <aside className="properties-panel">
             <div className="properties-header">
@@ -863,6 +933,7 @@ function App() {
             </div>
 
             {/* SELECTED NODE INFO */}
+
             <div className="selected-node-info">
               <span className="selected-node-icon">
                 {getNodeIcon(selectedNode.type)}
@@ -878,6 +949,7 @@ function App() {
             </div>
 
             {/* NODE VALIDATION STATUS */}
+
             {getNodeValidationErrors(selectedNode).length > 0 ? (
               <div className="validation-panel validation-error">
                 <strong>Needs attention</strong>
@@ -901,6 +973,7 @@ function App() {
             )}
 
             {/* COMMON NODE NAME */}
+
             <div className="property-field">
               <label>Node Name</label>
 
@@ -914,6 +987,7 @@ function App() {
             </div>
 
             {/* CONDITION SETTINGS */}
+
             {selectedNode.type === 'condition' && (
               <>
                 <div className="property-divider"></div>
@@ -1015,6 +1089,7 @@ function App() {
             )}
 
             {/* SENSOR SETTINGS */}
+
             {selectedNode.type === 'sensor' && (
               <div className="property-field">
                 <label>Sensor Type</label>
@@ -1043,6 +1118,7 @@ function App() {
             )}
 
             {/* DATA SOURCE SETTINGS */}
+
             {selectedNode.type === 'dataSource' && (
               <>
                 <div className="property-divider"></div>
@@ -1094,6 +1170,7 @@ function App() {
             )}
 
             {/* MATH OPERATION SETTINGS */}
+
             {selectedNode.type === 'mathOperation' && (
               <>
                 <div className="property-divider"></div>
@@ -1129,6 +1206,7 @@ function App() {
             )}
 
             {/* ALERT SETTINGS */}
+
             {selectedNode.type === 'alert' && (
               <>
                 <div className="property-divider"></div>
@@ -1173,6 +1251,7 @@ function App() {
             )}
 
             {/* ACTION TRIGGER SETTINGS */}
+
             {selectedNode.type === 'actionTrigger' && (
               <>
                 <div className="property-divider"></div>
