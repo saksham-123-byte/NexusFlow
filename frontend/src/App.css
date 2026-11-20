@@ -995,3 +995,87 @@ button {
 .validation-success {
   color: #86efac !important;
 }
+
+/* ==========================================
+   DAY 1: WORKFLOW SAVE / LOAD UI
+========================================== */
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.workflow-buttons {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.workflow-action-button {
+  padding: 10px 15px;
+  border: 1px solid #39496b;
+  border-radius: 9px;
+  background: #1b2942;
+  color: #dce5ff;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.workflow-action-button:hover {
+  background: #293b5d;
+  border-color: #8195ff;
+  transform: translateY(-1px);
+}
+
+.save-workflow-button {
+  background: linear-gradient(135deg, #657cff, #8968e8);
+  border-color: #8292ff;
+  color: #ffffff;
+  box-shadow: 0 4px 15px #7185ff35;
+}
+
+.save-workflow-button:hover {
+  background: linear-gradient(135deg, #8195ff, #a184ff);
+  border-color: #b3a5ff;
+}
+
+.workflow-save-status {
+  color: #9cafff;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .toolbar-actions {
+    gap: 8px;
+  }
+
+  .workflow-buttons {
+    gap: 6px;
+  }
+
+  .workflow-action-button {
+    padding: 8px 10px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .workflow-buttons {
+    flex-wrap: wrap;
+  }
+
+  .workflow-save-status {
+    display: none;
+  }
+}

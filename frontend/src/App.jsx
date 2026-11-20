@@ -1,3 +1,4 @@
+
 import { useCallback, useRef, useState } from 'react';
 
 import {
@@ -71,6 +72,54 @@ const initialEdges = [
     markerEnd: { type: MarkerType.ArrowClosed },
   },
 ];
+
+// ==========================================
+// DAY 1: WORKFLOW SAVE / LOAD HELPERS
+// ==========================================
+
+const WORKFLOW_STORAGE_KEY = 'nexus-flow-saved-workflow';
+const WORKFLOW_STORAGE_VERSION = 1;
+
+function readSavedWorkflow() {
+  try {
+    const savedData = localStorage.getItem(
+      WORKFLOW_STORAGE_KEY
+    );
+
+    if (!savedData) return null;
+
+    const workflow = JSON.parse(savedData);
+
+    if (
+      workflow.version !== WORKFLOW_STORAGE_VERSION ||
+      !Array.isArray(workflow.nodes) ||
+      !Array.isArray(workflow.edges)
+    ) {
+      return null;
+    }
+
+    return workflow;
+  } catch (error) {
+    console.error('Unable to read saved workflow:', error);
+    return null;
+  }
+}
+
+function writeSavedWorkflow(nodes, edges) {
+  const workflow = {
+    version: WORKFLOW_STORAGE_VERSION,
+    nodes,
+    edges,
+    savedAt: new Date().toISOString(),
+  };
+
+  localStorage.setItem(
+    WORKFLOW_STORAGE_KEY,
+    JSON.stringify(workflow)
+  );
+
+  return workflow;
+}
 
 // ==========================================
 // WEEK 2: NODE VALIDATION HELPERS
@@ -593,16 +642,36 @@ const nodeTemplates = [
 // ==========================================
 
 function App() {
+  // Restore saved workflow when the app starts.
+  const [savedWorkflow] = useState(() => readSavedWorkflow());
+
   const [nodes, setNodes, onNodesChange] =
-    useNodesState(initialNodes);
+    useNodesState(savedWorkflow?.nodes ?? initialNodes);
 
   const [edges, setEdges, onEdgesChange] =
-    useEdgesState(initialEdges);
+    useEdgesState(savedWorkflow?.edges ?? initialEdges);
 
   const [selectedNodeId, setSelectedNodeId] = useState(null);
 
+  // Day 1: Save status
+  const [saveStatus, setSaveStatus] = useState(
+    savedWorkflow
+      ? 'Saved workflow restored'
+      : 'No saved workflow'
+  );
+
   const reactFlowInstance = useRef(null);
-  const idCounter = useRef(4);
+
+  // Generate the next ID without duplicating restored node IDs.
+  const restoredNodes = savedWorkflow?.nodes ?? initialNodes;
+
+  const nextNodeId =
+    Math.max(
+      3,
+      ...restoredNodes.map((node) => Number(node.id) || 0)
+    ) + 1;
+
+  const idCounter = useRef(nextNodeId);
 
   const selectedNode = nodes.find(
     (node) => node.id === selectedNodeId
@@ -652,7 +721,9 @@ function App() {
     [nodes, edges, setEdges]
   );
 
+  // ==========================================
   // ADD NODE TO CANVAS
+  // ==========================================
 
   const addNode = (template, position) => {
     const id = String(idCounter.current++);
@@ -675,7 +746,9 @@ function App() {
     setSelectedNodeId(id);
   };
 
+  // ==========================================
   // DRAG START
+  // ==========================================
 
   const onDragStart = (event, template) => {
     event.dataTransfer.setData(
@@ -686,14 +759,18 @@ function App() {
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  // ==========================================
   // DRAG OVER CANVAS
+  // ==========================================
 
   const onDragOver = (event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   };
 
+  // ==========================================
   // DROP NODE ON CANVAS
+  // ==========================================
 
   const onDrop = (event) => {
     event.preventDefault();
@@ -717,7 +794,9 @@ function App() {
     addNode(template, position);
   };
 
+  // ==========================================
   // UPDATE SELECTED NODE PROPERTIES
+  // ==========================================
 
   const updateNodeData = (field, value) => {
     setNodes((currentNodes) =>
@@ -735,7 +814,61 @@ function App() {
     );
   };
 
+  // ==========================================
+  // DAY 1: SAVE WORKFLOW
+  // ==========================================
+
+  const saveWorkflow = () => {
+    try {
+      writeSavedWorkflow(nodes, edges);
+
+      setSaveStatus(
+        `Workflow saved at ${new Date().toLocaleTimeString()}`
+      );
+    } catch (error) {
+      console.error('Unable to save workflow:', error);
+      setSaveStatus('Save failed. Check browser storage.');
+    }
+  };
+
+  // ==========================================
+  // DAY 1: LOAD WORKFLOW
+  // ==========================================
+
+  const loadWorkflow = () => {
+    try {
+      const workflow = readSavedWorkflow();
+
+      if (!workflow) {
+        setSaveStatus('No valid saved workflow found.');
+        return;
+      }
+
+      setNodes(workflow.nodes);
+      setEdges(workflow.edges);
+      setSelectedNodeId(null);
+
+      const highestId = Math.max(
+        3,
+        ...workflow.nodes.map(
+          (node) => Number(node.id) || 0
+        )
+      );
+
+      idCounter.current = highestId + 1;
+
+      setSaveStatus(
+        `Workflow loaded (${workflow.nodes.length} nodes)`
+      );
+    } catch (error) {
+      console.error('Unable to load workflow:', error);
+      setSaveStatus('Unable to load workflow.');
+    }
+  };
+
+  // ==========================================
   // CLEAR CANVAS
+  // ==========================================
 
   const clearCanvas = () => {
     setNodes([]);
@@ -743,7 +876,9 @@ function App() {
     setSelectedNodeId(null);
   };
 
+  // ==========================================
   // GET SELECTED NODE ICON
+  // ==========================================
 
   const getNodeIcon = (type) => {
     const icons = {
@@ -847,19 +982,41 @@ function App() {
               <p>Design your IoT automation visually</p>
             </div>
 
-            <div className="canvas-stats">
-              <span>{nodes.length} Nodes</span>
-              <span>{edges.length} Connections</span>
+            {/* DAY 1: SAVE / LOAD BUTTONS */}
 
-              <span
-                className={
-                  invalidNodeCount > 0
-                    ? 'validation-count has-errors'
-                    : 'validation-count'
-                }
-              >
-                {invalidNodeCount} Invalid
-              </span>
+            <div className="toolbar-actions">
+              <div className="canvas-stats">
+                <span>{nodes.length} Nodes</span>
+                <span>{edges.length} Connections</span>
+
+                <span
+                  className={
+                    invalidNodeCount > 0
+                      ? 'validation-count has-errors'
+                      : 'validation-count'
+                  }
+                >
+                  {invalidNodeCount} Invalid
+                </span>
+              </div>
+
+              <div className="workflow-buttons">
+                <button
+                  className="workflow-action-button"
+                  onClick={loadWorkflow}
+                  title="Load previously saved workflow"
+                >
+                  ↻ Load
+                </button>
+
+                <button
+                  className="workflow-action-button save-workflow-button"
+                  onClick={saveWorkflow}
+                  title="Save current workflow"
+                >
+                  💾 Save Workflow
+                </button>
+              </div>
             </div>
           </div>
 
@@ -901,8 +1058,14 @@ function App() {
             </ReactFlow>
           </div>
 
+          {/* DAY 1: SAVE STATUS */}
+
           <div className="canvas-footer">
             <span>● Editor Ready</span>
+
+            <span className="workflow-save-status">
+              {saveStatus}
+            </span>
 
             <span>
               Select a node to edit its properties
