@@ -51,7 +51,39 @@ const storeMultipleTelemetry = async (dataArray) => {
     }
 };
 
+// Retrieve telemetry records from MongoDB
+const getTelemetryRecords = async (limit = 100) => {
+    try {
+        if (
+            !Number.isInteger(limit) ||
+            limit < 1 ||
+            limit > 1000
+        ) {
+            throw new Error("Limit must be an integer between 1 and 1000");
+        }
+
+        const db = getDB();
+
+        const records = await db
+            .collection("telemetry")
+            .find({})
+            .sort({ timestamp: -1 })
+            .limit(limit)
+            .toArray();
+
+        return {
+            count: records.length,
+            data: records
+        };
+
+    } catch (error) {
+        console.error("Telemetry retrieval error:", error.message);
+        throw error;
+    }
+};
+
 module.exports = {
     storeTelemetry,
-    storeMultipleTelemetry
+    storeMultipleTelemetry,
+    getTelemetryRecords
 };

@@ -70,9 +70,19 @@ const getDB = () => {
 
     return db;
 };
+// Close MongoDB connection safely
+const closeDB = async () => {
+    if (client) {
+        await client.close();
+        client = null;
+        db = null;
+        console.log("MongoDB connection closed");
+    }
+};
 
 module.exports = {
     connectDB,
     initializeTimeSeriesCollection,
-    getDB
+    getDB,
+    closeDB
 };
