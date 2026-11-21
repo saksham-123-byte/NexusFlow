@@ -1,44 +1,256 @@
-# NexusFlow
-Visual IoT Telemetry &amp; Rule Engine
-# NexusFlow: Visual IoT Telemetry & Rule Engine
+# NexusFlow – Dynamic IoT Rule Engine
 
-## Overview
+A visual workflow builder designed to make IoT rule creation easier through a drag-and-drop interface.
 
-NexusFlow is a project focused on visualizing IoT telemetry data and managing rule-based logic through a centralized interface.
+## 1. Project Overview
 
-The goal is to provide a structured way to monitor device data, visualize telemetry, and define rules for handling events and conditions.
+NexusFlow is a frontend prototype of a Dynamic IoT Rule Engine.
 
-## Project Objectives
+Traditional IoT applications often require developers to modify application code whenever business rules change.
 
-- Visualize real-time IoT telemetry data.
-- Monitor device status and incoming sensor data.
-- Define and manage configurable rules.
-- Evaluate telemetry against predefined conditions.
-- Provide an intuitive interface for monitoring and rule management.
+NexusFlow aims to simplify this process by allowing users to create workflows visually using configurable nodes.
 
-## Planned Core Modules
+Users can connect data sources, apply logical and mathematical operations, and configure action triggers through a visual canvas.
 
-1. **Visual Telemetry Dashboard** – Display and monitor IoT device data.
-2. **Device Management** – Organize and track connected devices.
-3. **Rule Engine** – Define conditions and actions based on telemetry.
-4. **Event Monitoring** – Track events and rule execution results.
+## 2. Problem Statement
 
-## Technology Stack
+Hardcoding IoT device logic, such as sending an alert when temperature exceeds 80°C, requires developer intervention whenever a rule changes.
 
-*To be updated as the project architecture and technologies are finalized.*
+Traditional application architectures can also face challenges when handling high-frequency machine data and dynamically defined rules.
 
-## Project Setup
+NexusFlow explores a visual approach to configuring these rules without manually writing application logic for every change.
 
-Installation and setup instructions will be added once the initial project structure is established.
+## 3. Current Features
 
-## Contributors
+- Interactive workflow canvas.
+- Drag-and-drop node creation.
+- Click-to-add node functionality.
+- Custom React Flow nodes.
+- Configurable node properties.
+- Connection validation between node types.
+- Duplicate connection prevention.
+- Animated workflow connections.
+- Workflow node and edge statistics.
+- MiniMap and canvas controls.
+- Node deletion support.
+- Workflow save functionality.
+- Workflow load functionality.
+- Browser-based workflow persistence using localStorage.
+- Save status feedback.
+- Responsive dark-themed interface.
 
-Project contributors and team details will be listed here.
+## 4. Technology Stack
 
-## Project Status
+### Frontend
 
-<escape>🚧</escape> Initial setup and development.
+- React
+- Vite
+- JavaScript
+- CSS
+
+### Workflow Visualization
+
+- React Flow
+- @xyflow/react
+
+### Browser Storage
+
+- localStorage
+
+## 5. Node Library
+
+NexusFlow currently provides the following node categories.
+
+### Data Sources
+
+- Temperature Sensor
+- MQTT Data Source
+- API Data Source
+
+### Logic
+
+- Condition
+
+### Math Operations
+
+- Addition
+- Subtraction
+- Multiplication
+- Division
+- Average
+
+### Action Triggers
+
+- Send Alert
+- Email Notification
+- Webhook
+
+## 6. Workflow Structure
+
+A workflow consists of nodes and connections.
+
+Each node represents a specific operation or component in the workflow.
+
+Connections define the visual sequence between workflow components.
+
+Example workflow:
+
+Temperature Sensor → Temperature Condition → Send Alert
+
+Example rule:
+
+If temperature is greater than 80°C, configure an alert action.
+
+## 7. Connection Rules
+
+The editor validates connections based on node types.
+
+- Sensor nodes can connect to math or condition nodes.
+- Data source nodes can connect to math or condition nodes.
+- Math nodes can connect to math or condition nodes.
+- Condition nodes can connect to alert or action trigger nodes.
+- Alert nodes cannot be used as source nodes.
+- Action trigger nodes cannot be used as source nodes.
+- Self-connections are rejected.
+- Duplicate connections are rejected.
+
+## 8. Node Configuration and Validation
+
+Users can configure individual nodes through the properties panel.
+
+Examples of configuration validation include:
+
+- MQTT endpoint format validation.
+- REST API endpoint format validation.
+- Condition operator validation.
+- Numeric threshold validation.
+- Email recipient validation.
+- Webhook URL validation.
+- Required alert message validation.
+
+These checks validate configuration formats and do not establish live external connections.
+
+## 9. Workflow Save and Load
+
+NexusFlow supports saving and restoring workflows through browser localStorage.
+
+The Save Workflow button stores the current nodes and connections.
+
+The Load Workflow button restores the previously saved workflow.
+
+The application also attempts to restore the last saved workflow when the page is refreshed.
+
+Saved workflows are stored locally in the browser.
+
+Clearing browser storage may remove saved workflows.
+
+## 10. Installation and Setup
+
+### Prerequisites
+
+- Node.js
+- npm
+- Git
+- Visual Studio Code (recommended)
+
+### Clone Repository
+
+```bash
+git clone https://github.com/saksham-123-byte/NexusFlow.git
+```
+
+### Navigate to Frontend
+
+```bash
+cd NexusFlow/frontend
+```
+
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Start Development Server
+
+```bash
+npm run dev
+```
+
+Open the local URL displayed in the terminal, usually:
+
+```text
+http://localhost:5173/
+```
+
+## 11. Project Structure
+
+```text
+NexusFlow/
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── App.css
+│   │   └── main.jsx
+│   │
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js
+│
+└── README.md
+```
+
+## 12. Current Project Scope
+
+The current implementation focuses on the frontend workflow editor.
+
+The following capabilities are not yet implemented:
+
+- Live MQTT broker communication.
+- Live REST API data ingestion.
+- Backend rule execution engine.
+- Real-time IoT sensor streaming.
+- Database integration.
+- Actual email delivery.
+- Actual webhook execution.
+- User authentication.
+
+Node configuration and connection validation currently operate within the frontend prototype.
+
+## 13. Future Enhancements
+
+Planned improvements include:
+
+- Workflow JSON export.
+- Workflow JSON import.
+- Node duplication.
+- Improved node and edge management.
+- Undo and redo functionality.
+- Node library search.
+- Workflow validation summary.
+- Workflow simulation mode.
+- Backend integration.
+- Real-time IoT data processing.
+- Dynamic rule execution.
+
+## 14. Development Status
+
+NexusFlow is under active development as an internship project.
+
+The current milestone focuses on building the visual workflow editor and expanding its node library.
+
+Future milestones will progressively introduce workflow management, validation, simulation, and backend capabilities.
+
+## 15. Author
+
+**Project:** NexusFlow – Dynamic IoT Rule Engine
+
+**Repository:** https://github.com/saksham-123-byte/NexusFlow
+
+**Development:** Internship Project
 
 ---
 
-**NexusFlow – Making IoT telemetry visual, actionable, and intelligent.**
+*Built to make dynamic IoT rule configuration more visual, flexible, and accessible.*
