@@ -254,3 +254,71 @@ Future milestones will progressively introduce workflow management, validation, 
 ---
 
 *Built to make dynamic IoT rule configuration more visual, flexible, and accessible.*
+## 16. Application Preview
+
+NexusFlow provides a visual workflow editor where users can create and configure IoT automation workflows.
+
+### Default Workflow
+
+The application starts with a sample workflow:
+
+**Temperature Sensor → Temperature Condition → Send Alert**
+
+Example configuration:
+
+- Data source: Temperature Sensor
+- Condition: Temperature greater than 80°C
+- Action: Send Alert
+
+### How to Use the Editor
+
+1. Open the NexusFlow application.
+2. Select a node from the sidebar.
+3. Add the node to the workflow canvas using drag-and-drop or click.
+4. Select a node to configure its properties.
+5. Connect compatible nodes using their connection handles.
+6. Review node configuration and validation messages.
+7. Click Save Workflow to store the current workflow.
+8. Use Load Workflow to restore the saved workflow.
+
+### Workflow Management
+
+The editor provides a visual environment for managing workflow nodes and connections.
+
+Users can configure individual nodes, inspect workflow connections, and save their workflow for later use.
+
+### Project Note
+
+This application is currently a frontend prototype. Workflow connections represent visual logic and do not yet execute real IoT operations or trigger external services.
+## 17. Design Principles and Reliability
+
+NexusFlow follows a modular approach to make workflow creation easier to understand and maintain.
+
+### User Experience
+
+- Simple and intuitive workflow editor.
+- Clear separation between node categories.
+- Consistent dark-themed interface.
+- Easy access to node configuration.
+- Immediate visual feedback for invalid configurations.
+
+### Workflow Reliability
+
+- Prevents unsupported node connections.
+- Rejects duplicate connections.
+- Preserves node configurations when saving workflows.
+- Restores saved nodes and edges from browser storage.
+- Handles invalid or unavailable saved workflow data.
+- Maintains unique node IDs when adding new nodes.
+
+### Maintainability
+
+- Custom node components keep node interfaces organized.
+- Reusable connection validation logic.
+- Separate styling through CSS.
+- Versioned workflow storage structure.
+- React state management for interactive canvas updates.
+
+### Development Goal
+
+The long-term goal is to evolve NexusFlow into a complete dynamic IoT rule engine that can process incoming sensor data and execute user-defined automation rules without requiring code changes for every new business requirement.
