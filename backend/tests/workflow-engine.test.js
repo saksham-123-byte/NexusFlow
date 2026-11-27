@@ -86,6 +86,49 @@ const runTests = async () => {
         assert.equal(result.nodeResults.action.data, 50);
     });
 
+    await test("Workflow tracks failed node execution", async () => {
+        const workflow = createWorkflow();
+
+        // Configure the math node to trigger division by zero
+        workflow.nodes[1].config = {
+            operation: "divide",
+            operand: 0
+        };
+
+        let executionError;
+
+        try {
+            await firstValueFrom(executeWorkflow(workflow));
+        } catch (error) {
+            executionError = error;
+        }
+
+        assert.ok(executionError);
+
+        assert.equal(executionError.nodeId, "math");
+        assert.equal(executionError.nodeType, "MATH_OPERATION");
+
+        assert.equal(
+            executionError.executionHistory.length,
+            2
+        );
+
+        assert.deepEqual(
+            executionError.executionHistory.map(item => item.status),
+            ["SUCCESS", "FAILED"]
+        );
+
+        assert.deepEqual(
+            executionError.executionSummary,
+            {
+                totalNodes: 3,
+                successfulNodes: 1,
+                failedNodes: 1
+            }
+        );
+    });
+
+
     await test("Workflow rejects invalid edge references", () => {
         const workflow = createWorkflow();
 
@@ -96,6 +139,51 @@ const runTests = async () => {
             /unknown node/
         );
     });
+
+    await test("Workflow records execution history", async () => {
+        const workflow = createWorkflow();
+
+        const result = await firstValueFrom(
+            executeWorkflow(workflow)
+        );
+
+        assert.equal(result.executionHistory.length, 3);
+
+        assert.deepEqual(
+            result.executionHistory.map(item => item.status),
+            ["SUCCESS", "SUCCESS", "SUCCESS"]
+        );
+
+        assert.equal(
+            result.executionHistory[0].output,
+            10
+        );
+
+        assert.equal(
+            result.executionHistory[1].input,
+            10
+        );
+
+        assert.equal(
+            result.executionHistory[1].output,
+            50
+        );
+    });
+
+    await test("Workflow provides execution summary", async () => {
+        const workflow = createWorkflow();
+
+        const result = await firstValueFrom(
+            executeWorkflow(workflow)
+        );
+
+        assert.deepEqual(result.executionSummary, {
+            totalNodes: 3,
+            successfulNodes: 3,
+            failedNodes: 0
+        });
+    });
+
 
     await test("Graph Parser rejects cyclic workflows", () => {
         const workflow = {
